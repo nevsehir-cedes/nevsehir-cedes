@@ -106,6 +106,22 @@
 .cedesMotto strong{color:var(--teal,#0f6b5b);font-size:16px;font-weight:800}
 .cedesMotto span{font-size:13px;letter-spacing:.15px}
 @media(max-width:600px){.welcomeLine h1{font-size:25px}.cedesMotto strong{font-size:14px}.cedesMotto span{font-size:12px}}
+
+/* V71: Ana sayfa haber ve duyuru görsellerini daha dengeli göster */
+.dualStage .panelSlide.hasImage{grid-template-rows:48% 52%}
+.dualStage .panelSlide.hasImage .homeContentImage{
+  display:block;width:100%;height:100%;object-fit:contain;object-position:center;
+  box-sizing:border-box;padding:10px 14px;background:linear-gradient(135deg,#fbf8f4,#f1ebe6);
+}
+.newsPanel .panelSlide.hasImage .homeContentImage{background:linear-gradient(135deg,#f8fbfa,#edf5f2)}
+.annPanel .panelSlide.hasImage .homeContentImage{background:linear-gradient(135deg,#fcf8fa,#f4edf2)}
+.dualStage .panelSlide.hasImage .panelCopy{padding:12px 18px}
+.dualStage .panelSlide.hasImage .panelCopy h2{font-size:18px;margin:4px 0}
+.dualStage .panelSlide.hasImage .panelCopy p{margin:5px 0 7px;line-height:1.45}
+@media(max-width:620px){
+ .dualStage .panelSlide.hasImage{grid-template-rows:44% 56%}
+ .dualStage .panelSlide.hasImage .homeContentImage{padding:8px 10px}
+}
 </style>
 <style id="v7-palette">
 :root{--plum:#4b2142;--plum2:#6b315e;--teal:#0f6b5b;--teal2:#178675;--cream:#f7f2ea;--paper:#fffdf9;--terracotta:#c96f4b;--gold:#c6a45e;--ink:#2b2530;--muted:#756d78;--line:#e8ddd4}
