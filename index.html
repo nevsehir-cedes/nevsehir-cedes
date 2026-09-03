@@ -1,7 +1,7 @@
 <!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#70425f"><meta name="description" content="Nevşehir ÇEDES İl Koordinatörlüğü resmi il portalı. ÇEDES kapsamında Nevşehir&#x27;deki okullar, etkinlikler, haberler, duyurular, galeri ve proje çalışmalarına ulaşın."><meta property="og:type" content="website"><meta property="og:title" content="Nevşehir ÇEDES İl Koordinatörlüğü"><meta property="og:description" content="Nevşehir ÇEDES haberleri, duyuruları, etkinlikleri, okulları ve çalışmaları."><meta property="og:image" content="icon-512.png"><meta property="og:site_name" content="Nevşehir ÇEDES"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Nevşehir ÇEDES İl Koordinatörlüğü"><meta name="twitter:description" content="Nevşehir ÇEDES haberleri, duyuruları, etkinlikleri ve okul çalışmaları."><meta name="twitter:image" content="icon-512.png"><!-- V120 GENEL GALERI FOTOGRAF SILME -->
 <title>Nevşehir ÇEDES | İl Koordinatörlüğü, Etkinlikler ve Haberler</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Nevşehir ÇEDES">
 <!-- V121 GOOGLE SEO / ARAMA MOTORU DUZENLEMESI -->
-<!-- V122 ICERIGE OZEL DOGRUDAN PAYLASIM BAGLANTILARI -->
+<!-- V123 TUM PORTAL SAYFALARI VE ICERIKLER ICIN DOGRUDAN PAYLASIM BAGLANTILARI -->
 <link rel="canonical" href="https://nevsehircedes.org.tr/">
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
 <meta property="og:url" content="https://nevsehircedes.org.tr/">
@@ -672,7 +672,29 @@ function setGalleryAdminBackVisibility(){
  if(!b)return;
  b.style.display=sessionStorage.getItem('cedes_gallery_admin_preview')==='1'?'inline-block':'none';
 }
-function go(id){if(!['contentDetail','eventDetail','schoolDetail'].includes(id)&&typeof clearContentDeepLink==='function')clearContentDeepLink();if(document.getElementById('admin')?.classList.contains('active'))captureAdminDraft(currentAdminTab);document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('nav').classList.remove('open');window.scrollTo(0,0);if(id==='schools')renderSchools();if(id==='events')renderEvents();if(id==='gallery'){renderGallery();setGalleryAdminBackVisibility()}if(id==='docs')renderDocs();if(id==='admin')checkAdminSession()}
+function go(id){
+  const detailPages=['contentDetail','eventDetail','schoolDetail','galleryAlbum'];
+  if(!detailPages.includes(id)){
+    if(id==='home'){
+      if(typeof clearContentDeepLink==='function')clearContentDeepLink();
+    }else if(id!=='admin' && typeof setSectionDeepLink==='function'){
+      setSectionDeepLink(id);
+    }
+  }
+  if(document.getElementById('admin')?.classList.contains('active'))captureAdminDraft(currentAdminTab);
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  const target=document.getElementById(id);
+  if(!target)return;
+  target.classList.add('active');
+  document.getElementById('nav')?.classList.remove('open');
+  window.scrollTo(0,0);
+  if(id==='schools')renderSchools();
+  if(id==='events')renderEvents();
+  if(id==='gallery'){renderGallery();setGalleryAdminBackVisibility()}
+  if(id==='docs')renderDocs();
+  if(id==='admin')checkAdminSession();
+  if(typeof setSectionShareTitle==='function'&&!detailPages.includes(id))setSectionShareTitle(id);
+}
 // V118: Gizli yönetim erişimi — canlı /panel ve yerel HTML testinde güvenli çalışır.
 function openHiddenAdminRoute(){
   const q=new URLSearchParams(window.location.search);
@@ -813,7 +835,7 @@ function mapGalleryRow(r){
  return{id:r.id,title:r.title||'',type:r.category||'Etkinlikler',school:r.school||'İl Geneli',date:r.event_date_text||'',description:r.description||'',status:r.status||'draft',photos,coverUrl:r.cover_url||photos[0]||'',cover:['plum','teal','terracotta','gold'][Math.abs(Number(r.id)||0)%4],createdAt:r.created_at||''}
 }
 function renderGallery(){initGalleryFilters();let q=(document.getElementById('gallerySearch')?.value||'').toLocaleLowerCase('tr');let school=document.getElementById('gallerySchoolFilter')?.value||'Tümü';let type=document.getElementById('galleryTypeFilter')?.value||'Tümü';let list=allPublishedGalleryAlbums().filter(a=>(school==='Tümü'||a.school===school)&&(type==='Tümü'||a.type===type)&&(a.title+' '+a.description+' '+a.school).toLocaleLowerCase('tr').includes(q));let c=document.getElementById('albumCount');if(c)c.textContent=list.length+' albüm';let el=document.getElementById('galleryAlbums');if(!el)return;if(!list.length){el.innerHTML='<div class="albumEmpty"><b>Bu ölçütlere uygun albüm bulunamadı.</b><br><span>Yeni albümler yönetim panelinden eklendiğinde burada görünecek.</span></div>';return}el.innerHTML=list.map(a=>{const photos=Array.isArray(a.photos)?a.photos:[];const cover=photos[0]?`<img src="${photos[0]}" alt="${escHtml(a.title)}" style="width:100%;height:185px;object-fit:cover;display:block">`:'📷';return `<article class="albumCard" onclick="openAlbum('${a.id}')"><div class="albumCover ${a.cover==='teal'?'':a.cover}">${cover}<span>${albumPhotoCount(a)} fotoğraf</span></div><div class="albumBody"><div class="albumType">${escHtml(a.type).toUpperCase()}</div><h3>${escHtml(a.title)}</h3><p>📅 ${escHtml(a.date)}</p><p>🏫 ${escHtml(a.school)}</p></div></article>`}).join('')}
-function openAlbum(id){const a=allPublishedGalleryAlbums().find(x=>String(x.id)===String(id));if(!a)return;document.getElementById('albumDetailType').textContent=(a.type||'').toUpperCase();document.getElementById('albumDetailTitle').textContent=a.title||'';document.getElementById('albumDetailMeta').textContent=a.description||'';document.getElementById('albumDetailSchool').textContent=a.school||'';document.getElementById('albumDetailDate').textContent=a.date||'';const photos=Array.isArray(a.photos)?a.photos:[];const count=albumPhotoCount(a);document.getElementById('albumDetailCount').textContent=count+' fotoğraf';document.getElementById('albumPhotoGrid').innerHTML=photos.length?photos.map((src,i)=>`<div class="albumPhoto" style="padding:0;overflow:hidden"><img src="${src}" alt="Fotoğraf ${i+1}" style="width:100%;height:100%;object-fit:cover"></div>`).join(''):'<div class="albumPhoto"><strong>📷</strong><small>Bu albüme henüz fotoğraf eklenmedi.</small></div>';go('galleryAlbum')}
+function openAlbum(id){const a=allPublishedGalleryAlbums().find(x=>String(x.id)===String(id));if(!a)return;setContentDeepLink('album',a.id);setShareTitle((a.title||'Galeri Albümü')+' | Nevşehir ÇEDES');document.getElementById('albumDetailType').textContent=(a.type||'').toUpperCase();document.getElementById('albumDetailTitle').textContent=a.title||'';document.getElementById('albumDetailMeta').textContent=a.description||'';document.getElementById('albumDetailSchool').textContent=a.school||'';document.getElementById('albumDetailDate').textContent=a.date||'';const photos=Array.isArray(a.photos)?a.photos:[];const count=albumPhotoCount(a);document.getElementById('albumDetailCount').textContent=count+' fotoğraf';document.getElementById('albumPhotoGrid').innerHTML=photos.length?photos.map((src,i)=>`<div class="albumPhoto" style="padding:0;overflow:hidden"><img src="${src}" alt="Fotoğraf ${i+1}" style="width:100%;height:100%;object-fit:cover"></div>`).join(''):'<div class="albumPhoto"><strong>📷</strong><small>Bu albüme henüz fotoğraf eklenmedi.</small></div>';go('galleryAlbum')}
 let supabaseDocumentsCache=[];
 function getSavedDocuments(){return supabaseDocumentsCache}
 function setSavedDocuments(items){supabaseDocumentsCache=items}
@@ -1243,10 +1265,24 @@ renderEvents();
 renderGallery();
 renderDocs();
 </script><script>const panelState={news:0,ann:0},panelTimers={};function panelSlides(type){return [...document.querySelectorAll('#'+type+'Slider .panelSlide')]}function showPanel(type,n,restart=true){const slides=panelSlides(type),dots=[...document.querySelectorAll('#'+type+'Dots button')];if(!slides.length)return;panelState[type]=(n+slides.length)%slides.length;slides.forEach((x,i)=>x.classList.toggle('active',i===panelState[type]));dots.forEach((x,i)=>x.classList.toggle('active',i===panelState[type]));if(restart){clearInterval(panelTimers[type]);panelTimers[type]=setInterval(()=>changePanel(type,1,false),type==='news'?5200:6100)}}function changePanel(type,d,restart=true){showPanel(type,panelState[type]+d,restart)}function initDualPanels(){['news','ann'].forEach(type=>{const slides=panelSlides(type),dots=document.getElementById(type+'Dots');if(!slides.length||!dots)return;dots.innerHTML=slides.map((_,i)=>`<button aria-label="${i+1}. içerik" onclick="showPanel('${type}',${i},true)"></button>`).join('');showPanel(type,0,true)})}window.addEventListener('DOMContentLoaded',initDualPanels);</script><script>
-// V122: Her haber, duyuru, etkinlik ve okul için paylaşılabilir doğrudan bağlantı
+// V123: Tüm portal sayfaları ve tekil içerikler için paylaşılabilir doğrudan bağlantı
 let currentShareTitle='Nevşehir ÇEDES İl Portalı';
 let deepLinkOpened=false;
+
+const publicSectionTitles={
+  home:'Nevşehir ÇEDES İl Portalı',
+  cedes:'ÇEDES Nedir? | Nevşehir ÇEDES',
+  ann:'Duyurular | Nevşehir ÇEDES',
+  news:'Haberler | Nevşehir ÇEDES',
+  events:'Etkinlikler | Nevşehir ÇEDES',
+  schools:'Okullarımız | Nevşehir ÇEDES',
+  gallery:'Fotoğraf Galerisi | Nevşehir ÇEDES',
+  docs:'Belgeler | Nevşehir ÇEDES',
+  contact:'Hakkımızda ve İletişim | Nevşehir ÇEDES'
+};
+
 function setShareTitle(t){currentShareTitle=t||'Nevşehir ÇEDES İl Portalı'}
+
 function portalBaseUrl(){
   try{
     const configured=(typeof getSiteSettings==='function'?getSiteSettings().portalUrl:'https://nevsehircedes.org.tr/')||'https://nevsehircedes.org.tr/';
@@ -1256,24 +1292,41 @@ function portalBaseUrl(){
     return u.toString();
   }catch(e){return 'https://nevsehircedes.org.tr/'}
 }
-function setContentDeepLink(type,value){
-  if(!type||value===undefined||value===null||value==='')return;
+
+function replacePortalQuery(params={}){
   try{
     const u=new URL(portalBaseUrl());
-    u.searchParams.set(type,String(value));
+    Object.entries(params).forEach(([k,v])=>{
+      if(v!==undefined&&v!==null&&String(v)!=='')u.searchParams.set(k,String(v));
+    });
     history.replaceState(null,'',u.pathname+u.search);
   }catch(e){}
 }
+
+function setContentDeepLink(type,value){
+  if(!type||value===undefined||value===null||value==='')return;
+  replacePortalQuery({[type]:value});
+}
+
+function setSectionDeepLink(id){
+  const allowed=['cedes','ann','news','events','schools','gallery','docs','contact'];
+  if(!allowed.includes(id))return;
+  replacePortalQuery({sayfa:id});
+}
+
+function setSectionShareTitle(id){
+  setShareTitle(publicSectionTitles[id]||'Nevşehir ÇEDES İl Portalı');
+}
+
 function clearContentDeepLink(){
   try{
-    const q=new URLSearchParams(location.search);
-    if(q.has('haber')||q.has('duyuru')||q.has('etkinlik')||q.has('okul')){
-      const u=new URL(portalBaseUrl());
-      history.replaceState(null,'',u.pathname);
-      currentShareTitle='Nevşehir ÇEDES İl Portalı';
-    }
+    const u=new URL(portalBaseUrl());
+    history.replaceState(null,'',u.pathname);
+    currentShareTitle='Nevşehir ÇEDES İl Portalı';
+    deepLinkOpened=false;
   }catch(e){}
 }
+
 function shareCurrent(kind){
   const url=location.href.split('#')[0];
   const title=currentShareTitle||document.title;
@@ -1282,25 +1335,41 @@ function shareCurrent(kind){
     return;
   }
   if(kind==='copy'){
-    navigator.clipboard?.writeText(url).then(()=>alert('İçeriğin doğrudan bağlantısı kopyalandı.')).catch(()=>prompt('Bağlantıyı kopyalayın:',url));
+    navigator.clipboard?.writeText(url).then(()=>alert('Bu sayfanın doğrudan bağlantısı kopyalandı.')).catch(()=>prompt('Bağlantıyı kopyalayın:',url));
   }
 }
+
 function openDeepLinkedContent(){
   if(deepLinkOpened)return;
   const q=new URLSearchParams(location.search);
-  const haber=q.get('haber'),duyuru=q.get('duyuru'),etkinlik=q.get('etkinlik'),okul=q.get('okul');
+  const haber=q.get('haber'),
+        duyuru=q.get('duyuru'),
+        etkinlik=q.get('etkinlik'),
+        okul=q.get('okul'),
+        album=q.get('album'),
+        sayfa=q.get('sayfa');
+
   if(haber){
     const n=getSavedNews().find(x=>String(x.id)===String(haber)&&x.status==='published');
-    if(n){deepLinkOpened=true;openSavedNews(n.id)}
+    if(n){deepLinkOpened=true;openSavedNews(n.id);return}
   }else if(duyuru){
     const a=getSavedAnnouncements().find(x=>String(x.id)===String(duyuru)&&x.status==='published');
-    if(a){deepLinkOpened=true;openSavedAnnouncement(a.id)}
+    if(a){deepLinkOpened=true;openSavedAnnouncement(a.id);return}
   }else if(etkinlik){
     const e=getSavedEvents().find(x=>String(x.id)===String(etkinlik)&&x.status==='published');
-    if(e){deepLinkOpened=true;eventDetail('l'+e.id)}
+    if(e){deepLinkOpened=true;eventDetail('l'+e.id);return}
   }else if(okul){
     const sc=schools.find(x=>x.name===okul);
-    if(sc){deepLinkOpened=true;schoolDetail(sc.name)}
+    if(sc){deepLinkOpened=true;schoolDetail(sc.name);return}
+  }else if(album){
+    const a=allPublishedGalleryAlbums().find(x=>String(x.id)===String(album));
+    if(a){deepLinkOpened=true;openAlbum(a.id);return}
+  }
+
+  const allowed=['cedes','ann','news','events','schools','gallery','docs','contact'];
+  if(sayfa&&allowed.includes(sayfa)){
+    deepLinkOpened=true;
+    go(sayfa);
   }
 }
 
