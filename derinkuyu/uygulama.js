@@ -123,6 +123,8 @@ document.querySelector('#menuBtn')?.addEventListener('click',openDrawer);
 document.querySelector('#drawerClose')?.addEventListener('click',closeDrawer);
 document.querySelector('#menuOverlay')?.addEventListener('click',closeDrawer);
 document.querySelectorAll('[data-drawer-nav]').forEach(b=>b.addEventListener('click',()=>{ closeDrawer(); go(b.dataset.drawerNav); }));
+document.querySelector('[data-drawer-action="voice"]')?.addEventListener('click',()=>{ closeDrawer(); openVoiceSelector(); });
+
 document.querySelector('[data-drawer-action="orientation"]')?.addEventListener('click',()=>{ closeDrawer(); renderOrientation(); });
 document.querySelector('[data-drawer-action="mode"]')?.addEventListener('click',()=>{
   closeDrawer();
