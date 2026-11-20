@@ -292,35 +292,60 @@ function renderIntro(){
 const guideNarration = `Derinkuyu Yeraltı Şehri, Kapadokya'nın jeolojik yapısı içinde geliştirilmiş çok katlı bir yeraltı yerleşimidir. Kültür ve Turizm Bakanlığı tanıtımına göre yapı sekiz katlıdır ve büyük bir topluluğun uzun süre birlikte yaşayabilmesine imkân verecek alanlar içerir. Erzak depoları, havalandırma bacaları, su kuyuları, toplantı alanları, ibadet mekânları ve dar geçitler bu yaşamın izlerini taşır. Bazı tünel girişlerinde güvenlik için büyük taş silindirler kullanılmıştır. Derinkuyu'yu gezerken özellikle havalandırma sistemi, dar geçitler, ortak kullanım alanları ve güvenlik düzeneklerine dikkat et. Bu durak bize birlikte yaşamanın yardımlaşma, sorumluluk, dayanışma ve güven gerektirdiğini düşündürüyor.`;
 
 function speakGuide(){
-  if(!('speechSynthesis' in window)){ say('Bu cihazda sesli okuma desteklenmiyor.'); return; }
+  if(!('speechSynthesis' in window)){
+    say('Bu cihazda sesli okuma desteklenmiyor.');
+    return;
+  }
+
   speechSynthesis.cancel();
 
-  const startTurkishSpeech = () => {
+  const findTurkishVoice = () => {
     const voices = speechSynthesis.getVoices();
-    const turkishVoice = voices.find(v => /^tr(-|_)?TR$/i.test(v.lang))
-      || voices.find(v => /^tr/i.test(v.lang))
-      || voices.find(v => /turkish|türkçe|turkce/i.test(v.name));
+    return voices.find(v => (v.lang || '').toLowerCase() === 'tr-tr')
+      || voices.find(v => (v.lang || '').toLowerCase().startsWith('tr'))
+      || voices.find(v => /turkish|türkçe|turkce/i.test(v.name || ''));
+  };
+
+  const speakWithTurkishVoice = () => {
+    const turkishVoice = findTurkishVoice();
+    if(!turkishVoice){
+      say('Bu telefonda Türkçe ses bulunamadı. Telefonun metinden sese ayarlarından Türkçe sesi etkinleştirin. İngilizce ses kullanılmayacak.');
+      return false;
+    }
 
     const u = new SpeechSynthesisUtterance(guideNarration);
-    u.lang = 'tr-TR';
+    u.lang = turkishVoice.lang || 'tr-TR';
+    u.voice = turkishVoice;
     u.rate = 0.92;
     u.pitch = 1;
-    if(turkishVoice) u.voice = turkishVoice;
-
     speechSynthesis.speak(u);
-    say(turkishVoice ? 'Türkçe rehber anlatımı başladı.' : 'Türkçe anlatım başlatıldı.');
+    say('Türkçe rehber anlatımı başladı.');
+    return true;
   };
 
   if(speechSynthesis.getVoices().length){
-    startTurkishSpeech();
-  }else{
-    const once = () => {
-      speechSynthesis.removeEventListener('voiceschanged', once);
-      startTurkishSpeech();
-    };
-    speechSynthesis.addEventListener('voiceschanged', once);
-    setTimeout(startTurkishSpeech, 700);
+    speakWithTurkishVoice();
+    return;
   }
+
+  let done=false;
+  const tryOnce=()=>{
+    if(done) return;
+    if(speechSynthesis.getVoices().length){
+      done=true;
+      speechSynthesis.removeEventListener('voiceschanged', tryOnce);
+      speakWithTurkishVoice();
+    }
+  };
+  speechSynthesis.addEventListener('voiceschanged', tryOnce);
+  setTimeout(()=>{
+    if(done) return;
+    done=true;
+    speechSynthesis.removeEventListener('voiceschanged', tryOnce);
+    if(!speakWithTurkishVoice()){
+      // Uyarı speakWithTurkishVoice içinde gösterildi.
+    }
+  }, 1500);
 }
 function stopGuide(){ if('speechSynthesis' in window) speechSynthesis.cancel(); say('Sesli anlatım durduruldu.'); }
 

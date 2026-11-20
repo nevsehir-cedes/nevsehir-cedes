@@ -1,4 +1,4 @@
-const CACHE="derinkuyu-mobile-pilot-v4";
+const CACHE = 'derinkuyu-v5-turkce-ses';
 const ASSETS=[
   "./",
   "./index.html",
