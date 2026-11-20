@@ -1,3 +1,4 @@
+// cache-version: derinkuyu-v6-voice-picker
 const CACHE = 'derinkuyu-v5-turkce-ses';
 const ASSETS=[
   "./",

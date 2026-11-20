@@ -291,62 +291,91 @@ function renderIntro(){
 
 const guideNarration = `Derinkuyu Yeraltı Şehri, Kapadokya'nın jeolojik yapısı içinde geliştirilmiş çok katlı bir yeraltı yerleşimidir. Kültür ve Turizm Bakanlığı tanıtımına göre yapı sekiz katlıdır ve büyük bir topluluğun uzun süre birlikte yaşayabilmesine imkân verecek alanlar içerir. Erzak depoları, havalandırma bacaları, su kuyuları, toplantı alanları, ibadet mekânları ve dar geçitler bu yaşamın izlerini taşır. Bazı tünel girişlerinde güvenlik için büyük taş silindirler kullanılmıştır. Derinkuyu'yu gezerken özellikle havalandırma sistemi, dar geçitler, ortak kullanım alanları ve güvenlik düzeneklerine dikkat et. Bu durak bize birlikte yaşamanın yardımlaşma, sorumluluk, dayanışma ve güven gerektirdiğini düşündürüyor.`;
 
-function speakGuide(){
-  if(!('speechSynthesis' in window)){
-    say('Bu cihazda sesli okuma desteklenmiyor.');
-    return;
+const VOICE_PREF_KEY='derinkuyu-voice-name';
+
+function availableVoices(){
+  return ('speechSynthesis' in window) ? speechSynthesis.getVoices() : [];
+}
+function selectedVoice(){
+  const voices=availableVoices();
+  const saved=localStorage.getItem(VOICE_PREF_KEY);
+  if(saved){
+    const exact=voices.find(v=>v.name===saved);
+    if(exact) return exact;
   }
-
+  return voices.find(v=>(v.lang||'').toLowerCase()==='tr-tr')
+    || voices.find(v=>(v.lang||'').toLowerCase().startsWith('tr'))
+    || voices.find(v=>/turkish|türkçe|turkce/i.test(v.name||''))
+    || null;
+}
+function speakTurkish(text, successMessage='Türkçe rehber anlatımı başladı.'){
+  if(!('speechSynthesis' in window)){ say('Bu cihazda sesli okuma desteklenmiyor.'); return false; }
   speechSynthesis.cancel();
-
-  const findTurkishVoice = () => {
-    const voices = speechSynthesis.getVoices();
-    return voices.find(v => (v.lang || '').toLowerCase() === 'tr-tr')
-      || voices.find(v => (v.lang || '').toLowerCase().startsWith('tr'))
-      || voices.find(v => /turkish|türkçe|turkce/i.test(v.name || ''));
-  };
-
-  const speakWithTurkishVoice = () => {
-    const turkishVoice = findTurkishVoice();
-    if(!turkishVoice){
-      say('Bu telefonda Türkçe ses bulunamadı. Telefonun metinden sese ayarlarından Türkçe sesi etkinleştirin. İngilizce ses kullanılmayacak.');
+  const voice=selectedVoice();
+  const run=()=>{
+    const v=selectedVoice();
+    if(!v){
+      say('Türkçe ses otomatik bulunamadı. “Ses Seç” düğmesinden telefondaki sesi seçin.');
       return false;
     }
-
-    const u = new SpeechSynthesisUtterance(guideNarration);
-    u.lang = turkishVoice.lang || 'tr-TR';
-    u.voice = turkishVoice;
-    u.rate = 0.92;
-    u.pitch = 1;
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='tr-TR';
+    u.voice=v;
+    u.rate=.92;
+    u.pitch=1;
     speechSynthesis.speak(u);
-    say('Türkçe rehber anlatımı başladı.');
+    say(successMessage);
     return true;
   };
-
-  if(speechSynthesis.getVoices().length){
-    speakWithTurkishVoice();
-    return;
+  if(voice) return run();
+  if(!availableVoices().length){
+    const once=()=>{ speechSynthesis.removeEventListener('voiceschanged', once); run(); };
+    speechSynthesis.addEventListener('voiceschanged', once);
+    setTimeout(run,1200);
+    return true;
   }
-
-  let done=false;
-  const tryOnce=()=>{
-    if(done) return;
-    if(speechSynthesis.getVoices().length){
-      done=true;
-      speechSynthesis.removeEventListener('voiceschanged', tryOnce);
-      speakWithTurkishVoice();
-    }
-  };
-  speechSynthesis.addEventListener('voiceschanged', tryOnce);
-  setTimeout(()=>{
-    if(done) return;
-    done=true;
-    speechSynthesis.removeEventListener('voiceschanged', tryOnce);
-    if(!speakWithTurkishVoice()){
-      // Uyarı speakWithTurkishVoice içinde gösterildi.
-    }
-  }, 1500);
+  return run();
 }
+function speakGuide(){ return speakTurkish(guideNarration,'Türkçe rehber anlatımı başladı.'); }
+
+function openVoiceSelector(){
+  if(!('speechSynthesis' in window)){ say('Bu cihazda ses seçimi desteklenmiyor.'); return; }
+  const draw=()=>{
+    const voices=availableVoices();
+    document.querySelector('#voicePickerOverlay')?.remove();
+    const overlay=document.createElement('div');
+    overlay.id='voicePickerOverlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.58);display:flex;align-items:flex-end;justify-content:center;padding:16px;';
+    const panel=document.createElement('div');
+    panel.style.cssText='width:min(100%,520px);background:#fff8ee;color:#3a2416;border-radius:22px 22px 14px 14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.35);font-family:system-ui,sans-serif;';
+    const current=localStorage.getItem(VOICE_PREF_KEY)||'';
+    const opts=voices.map((v,i)=>`<option value="${String(v.name).replace(/"/g,'&quot;')}" ${v.name===current?'selected':''}>${(v.lang||'--')} — ${v.name}${v.default?' (varsayılan)':''}</option>`).join('');
+    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><strong style="font-size:20px">Rehber Sesi Seç</strong><div style="font-size:13px;opacity:.72;margin-top:3px">Türkçe sesi seçip önce deneyin.</div></div><button id="voiceClose" style="border:0;background:transparent;font-size:28px">×</button></div>
+      <select id="voiceSelect" style="width:100%;margin:16px 0 10px;padding:12px;border-radius:12px;border:1px solid #c7a67b;background:white;font-size:15px">${opts||'<option>Sesler yükleniyor…</option>'}</select>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button id="voiceTest" style="flex:1;padding:12px;border:0;border-radius:12px;background:#6b3d20;color:white;font-weight:700">▶ Sesi Dene</button><button id="voiceSave" style="flex:1;padding:12px;border:0;border-radius:12px;background:#b51613;color:white;font-weight:700">✓ Bu Sesi Kullan</button></div>
+      <div style="font-size:12px;opacity:.72;margin-top:12px">Not: Samsung A51’de bazı ses adları İngilizce görünebilir. “Sesi Dene” ile Türkçe okuyan sesi seçmeniz yeterlidir.</div>`;
+    overlay.appendChild(panel); document.body.appendChild(overlay);
+    const close=()=>overlay.remove();
+    panel.querySelector('#voiceClose').onclick=close;
+    overlay.onclick=e=>{if(e.target===overlay) close();};
+    panel.querySelector('#voiceTest').onclick=()=>{
+      const name=panel.querySelector('#voiceSelect').value;
+      const v=availableVoices().find(x=>x.name===name);
+      if(!v){ say('Seçilen ses bulunamadı.'); return; }
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance('Merhaba. Derinkuyu Dijital Gezi Rehberine hoş geldiniz.');
+      u.lang='tr-TR'; u.voice=v; u.rate=.92; speechSynthesis.speak(u);
+    };
+    panel.querySelector('#voiceSave').onclick=()=>{
+      const name=panel.querySelector('#voiceSelect').value;
+      if(name) localStorage.setItem(VOICE_PREF_KEY,name);
+      close(); say('Rehber sesi kaydedildi.');
+    };
+  };
+  if(availableVoices().length) draw();
+  else { speechSynthesis.addEventListener('voiceschanged', draw, {once:true}); setTimeout(draw,1200); }
+}
+
 function stopGuide(){ if('speechSynthesis' in window) speechSynthesis.cancel(); say('Sesli anlatım durduruldu.'); }
 
 const verifiedImages = {
@@ -505,14 +534,7 @@ const richStops = {
 };
 
 
-function speakText(text){
-  if(!('speechSynthesis' in window)){ say('Bu cihazda sesli okuma desteklenmiyor.'); return; }
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='tr-TR'; u.rate=.92; u.pitch=1;
-  speechSynthesis.speak(u);
-  say('Rehber anlatımı başladı.');
-}
+function speakText(text){ return speakTurkish(text,'Rehber anlatımı başladı.'); }
 
 
 function renderUnderground(tab='discover'){
@@ -527,7 +549,7 @@ function renderUnderground(tab='discover'){
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>renderUnderground(b.dataset.tab));
   const body=document.querySelector('#tabBody');
   if(tab==='discover') body.innerHTML=`<div class="guide-wrap">
-    <div class="guide-actions"><button class="listen-btn" id="listenGuide">🔊 Rehberi Dinle</button><button class="stop-btn" id="stopGuide">■ Durdur</button></div>
+    <div class="guide-actions"><button class="listen-btn" id="listenGuide">🔊 Rehberi Dinle</button><button class="stop-btn" id="stopGuide">■ Durdur</button><button class="stop-btn" id="voiceSelectBtn">🎙️ Ses Seç</button></div>
     <section class="tour-card"><div class="tour-label">KISACA</div><h3>Yer altında kurulmuş çok katlı bir yaşam sistemi</h3><p>Derinkuyu Yeraltı Şehri, büyük bir topluluğun barınma, korunma ve günlük ihtiyaçlarını karşılayabilecek biçimde düzenlenmiş çok katlı bir yeraltı yerleşimidir. Kültür ve Turizm Bakanlığı tanıtımında yapının <strong>sekiz katlı</strong> olduğu belirtilir.</p></section>
     <div class="real-gallery">
       <figure>${resilientImage(verifiedImages.undergroundRoom.primary,verifiedImages.undergroundRoom.alternate,"Derinkuyu Yeraltı Şehri oda ve ortak kullanım alanı")}<figcaption>Yeraltı şehrindeki oda ve ortak kullanım alanlarından bir görünüm.</figcaption></figure>
@@ -555,6 +577,7 @@ function renderUnderground(tab='discover'){
   if(document.querySelector('#toMission')) document.querySelector('#toMission').onclick=()=>renderUnderground('mission');
   if(document.querySelector('#listenGuide')) document.querySelector('#listenGuide').onclick=speakGuide;
   if(document.querySelector('#stopGuide')) document.querySelector('#stopGuide').onclick=stopGuide;
+  if(document.querySelector('#voiceSelectBtn')) document.querySelector('#voiceSelectBtn').onclick=openVoiceSelector;
   document.querySelectorAll('[data-mission]').forEach(c=>c.onchange=()=>{if(!isLive()) return; state.mission[c.dataset.mission]=c.checked;save();});
   if(document.querySelector('#missionDone')) document.querySelector('#missionDone').onclick=()=>{const n=Object.values(state.mission).filter(Boolean).length;if(n<3){say('En az üç keşif işaretle.');return;}say('Keşif görevi tamamlandı!');renderUnderground('quiz');};
   if(document.querySelector('#quizDone')) document.querySelector('#quizDone').onclick=()=>{const q1=document.querySelector('input[name=q1]:checked');const q2=document.querySelector('input[name=q2]:checked');if(!q1||!q2){say('İki soruyu da cevapla.');return;}const score=(q1.value==='0'?1:0)+(q2.value==='1'?1:0);state.quiz.underground=score;complete('underground');save();say(`Mini test: ${score}/2 doğru • Durak tamamlandı`);setTimeout(renderRoute,650);};
@@ -583,7 +606,7 @@ function renderRichStop(id, tab='discover'){
 
   if(tab==='discover'){
     body.innerHTML=`<div class="guide-wrap">
-      <div class="guide-actions"><button class="listen-btn" id="richListen">🔊 Rehberi Dinle</button><button class="stop-btn" id="richStop">■ Durdur</button></div>
+      <div class="guide-actions"><button class="listen-btn" id="richListen">🔊 Rehberi Dinle</button><button class="stop-btn" id="richStop">■ Durdur</button><button class="stop-btn" id="richVoiceSelect">🎙️ Ses Seç</button></div>
       <section class="tour-card"><div class="tour-label">KISACA</div><h3>${d.summaryTitle}</h3><p>${d.summary}</p></section>
       <div class="rich-gallery">${d.images.map((im,i)=>`<figure class="${i===0?'wide':''}">${resilientImage(im.url,im.altUrl||im.url,`${d.title} gerçek fotoğrafı`)}<figcaption>${im.cap}<small>${im.credit}</small></figcaption></figure>`).join('')}</div>
       <section class="tour-card"><div class="tour-label">TARİHÇE</div><h3>Geçmişten bugüne</h3><p>${d.history}</p></section>
@@ -594,6 +617,7 @@ function renderRichStop(id, tab='discover'){
     </div>`;
     document.querySelector('#richListen').onclick=()=>speakText(d.narration);
     document.querySelector('#richStop').onclick=stopGuide;
+    document.querySelector('#richVoiceSelect').onclick=openVoiceSelector;
     document.querySelector('#richMissionBtn').onclick=()=>renderRichStop(id,'mission');
     return;
   }
