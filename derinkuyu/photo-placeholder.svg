@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+<rect width="1200" height="760" fill="#eee7dc"/>
+<rect x="80" y="80" width="1040" height="600" rx="34" fill="#f8f4ed" stroke="#bcae97" stroke-width="4" stroke-dasharray="18 14"/>
+<circle cx="600" cy="290" r="78" fill="#d8c9b3"/>
+<path d="M410 535l125-135 90 86 82-93 115 142H410z" fill="#c8b79e"/>
+<text x="600" y="610" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#6c5f50">Fotoğraf gezi sonrası eklenecek</text>
+<text x="600" y="650" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" fill="#887966">Kendi çektiğimiz görsel kullanılacak</text>
+</svg>

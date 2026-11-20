@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#4a2718" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Derinkuyu ÇEDES" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="description" content="Değerlerimle Adım Adım – Derinkuyu Dijital Gezi Rehberi" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/cedes-logo.jpg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Derinkuyu Dijital Gezi Rehberi</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar topbar-premium">
+      <button class="icon-btn menu-trigger" id="menuBtn" aria-label="Menüyü aç">☰</button>
+      <div class="premium-brand"><strong>Değerlerimle Adım Adım</strong><span>Kültürel Miras Yolculuğu</span></div>
+      <button class="icon-btn" id="resetBtn" aria-label="İlerlemeyi sıfırla" title="İlerlemeyi sıfırla">↺</button>
+    </header>
+
+    <main id="app" tabindex="-1"></main>
+
+    
+  </div>
+
+  <div class="menu-overlay" id="menuOverlay"></div>
+  <aside class="side-drawer" id="sideDrawer" aria-hidden="true">
+    <div class="drawer-tip"></div>
+    <button class="drawer-close" id="drawerClose" aria-label="Menüyü kapat">×</button>
+    <nav class="drawer-nav" aria-label="Uygulama menüsü">
+      <button data-drawer-nav="home" class="active"><span class="menu-ico">⌂</span><div><strong>Ana Sayfa</strong></div></button>
+      <button data-drawer-nav="route"><span class="menu-ico">⌖</span><div><strong>Gezi Rotası</strong></div></button>
+      <button data-drawer-nav="info"><span class="menu-ico">▢</span><div><strong>Bilgi Köşesi</strong></div></button>
+      <button data-drawer-nav="tasks"><span class="menu-ico">▣</span><div><strong>Değer Kartım</strong></div></button>
+      <button data-drawer-nav="about"><span class="menu-ico">ⓘ</span><div><strong>Uygulama Hakkında</strong></div></button>
+    </nav>
+    <div class="drawer-landscape" aria-hidden="true">⌁ ᐱ ᐱ ᐱ  ◡</div>
+  </aside>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

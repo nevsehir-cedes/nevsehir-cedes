@@ -1,0 +1,22 @@
+DERİNKUYU ÇEDES – MOBİL YAYIN PAKETİ
+
+Önerilen yayın adresi:
+https://nevsehircedes.org.tr/derinkuyu/
+
+Yayınlama:
+1. Bu klasörün içeriğini sitenin /derinkuyu/ yoluna yerleştirin.
+2. HTTPS üzerinden yayınlayın. PWA ve çevrimdışı kullanım için HTTPS gereklidir.
+3. Telefonda adresi bir kez açın ve sayfanın tamamen yüklenmesini bekleyin.
+4. Android/Chrome: Menü > Ana ekrana ekle / Uygulamayı yükle.
+5. iPhone/Safari: Paylaş > Ana Ekrana Ekle.
+6. Kurulumdan sonra uçak modunda yeniden açarak çevrimdışı testi yapın.
+
+Saha testi:
+- Hamburger menü
+- Geziye Başla > yönerge > rota
+- Durak bilgi/görev/mini test akışı
+- Değer Kartım yanıtlarının sayfa kapatılıp açıldığında korunması
+- İnternet kesildiğinde yerel görsellerin görünmesi
+
+Not:
+Cumhuriyet Camii ve Hakkı Atamulu Kültür Parkı için geçici çevrimiçi görseller kullanılıyorsa internet yokken bunlar görünmeyebilir. Gezi sonrası öğrenci fotoğrafları yerel dosya olarak eklenince bu bağımlılık kalkacaktır.
