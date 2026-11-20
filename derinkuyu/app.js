@@ -779,15 +779,15 @@ function valueCardPayload(){
     participant_code: state.participantCode,
     school: v.school || null,
     grade: v.grade || null,
-    q1_most_impressive: v.q1,
-    q2_values: v.q2,
-    q3_helping_example: v.q3,
-    q4_safety_measure: v.q4,
-    q5_most_memorable_place: v.q5,
-    q6_why_protect_heritage: v.q6,
-    q7_key_learning: v.q7,
-    q8_theme_reflection: v.q8,
-    one_sentence_derinkuyu: v.oneSentence,
+    q1: v.q1 || null,
+    q2: Array.isArray(v.q2) ? v.q2.join(', ') : (v.q2 || null),
+    q3: v.q3 || null,
+    q4: v.q4 || null,
+    q5: v.q5 || null,
+    q6: v.q6 || null,
+    q7: v.q7 || null,
+    q8: v.q8 || null,
+    one_sentence: v.oneSentence || null,
     self_evaluation: v.selfEval,
     trip_date: '2026-11-25',
     submitted_at: new Date().toISOString()
@@ -835,7 +835,7 @@ async function submitValueCard({silent=false}={}){
       body:JSON.stringify(valueCardPayload())
     });
     // 409 = aynı anonim katılımcı kodu daha önce başarıyla kaydedilmiş olabilir.
-    if(!res.ok && res.status!==409) throw new Error(`HTTP ${res.status}`);
+    if(!res.ok && res.status!==409){ const detail=await res.text().catch(()=>""); throw new Error(`HTTP ${res.status}${detail?` - ${detail}`:""}`); }
     state.valueCardSubmitted=true;
     state.valueCardSubmittedAt=new Date().toISOString();
     state.valueCardComplete=true;

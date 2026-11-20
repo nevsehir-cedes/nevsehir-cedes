@@ -1,6 +1,6 @@
-// cache version 20261120-field-final-v1
+// cache version 20261120-valuecard-fix
 // cache-version: derinkuyu-field-final-v1
-const CACHE = 'derinkuyu-v9-field-final-v1';
+const CACHE = 'derinkuyu-v10-valuecard-fix';
 const ASSETS=[
   "./",
   "./index.html",
