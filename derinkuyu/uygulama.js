@@ -123,7 +123,6 @@ document.querySelector('#menuBtn')?.addEventListener('click',openDrawer);
 document.querySelector('#drawerClose')?.addEventListener('click',closeDrawer);
 document.querySelector('#menuOverlay')?.addEventListener('click',closeDrawer);
 document.querySelectorAll('[data-drawer-nav]').forEach(b=>b.addEventListener('click',()=>{ closeDrawer(); go(b.dataset.drawerNav); }));
-document.querySelector('[data-drawer-action="voice"]')?.addEventListener('click',()=>{ closeDrawer(); openVoiceSelector(); });
 
 document.querySelector('[data-drawer-action="orientation"]')?.addEventListener('click',()=>{ closeDrawer(); renderOrientation(); });
 document.querySelector('[data-drawer-action="mode"]')?.addEventListener('click',()=>{
@@ -291,6 +290,20 @@ function renderIntro(){
   if(document.querySelector('#introDone')) document.querySelector('#introDone').onclick=()=>{complete('intro');say('Başlangıç tamamlandı.');setTimeout(renderRoute,400);};
 }
 
+let activeGuideAudio=null;
+function playLocalGuide(file, message='Türkçe rehber anlatımı başladı.') {
+  try {
+    if(activeGuideAudio){ activeGuideAudio.pause(); activeGuideAudio.currentTime=0; }
+    activeGuideAudio=new Audio(file);
+    activeGuideAudio.preload='auto';
+    activeGuideAudio.play().then(()=>say(message)).catch(()=>say('Ses dosyası oynatılamadı. Sayfayı yenileyip tekrar deneyin.'));
+  } catch(e){ say('Ses dosyası oynatılamadı.'); }
+}
+function stopGuide(){
+  if(activeGuideAudio){ activeGuideAudio.pause(); activeGuideAudio.currentTime=0; }
+  say('Sesli anlatım durduruldu.');
+}
+
 const guideNarration = `Derinkuyu Yeraltı Şehri, Kapadokya'nın jeolojik yapısı içinde geliştirilmiş çok katlı bir yeraltı yerleşimidir. Kültür ve Turizm Bakanlığı tanıtımına göre yapı sekiz katlıdır ve büyük bir topluluğun uzun süre birlikte yaşayabilmesine imkân verecek alanlar içerir. Erzak depoları, havalandırma bacaları, su kuyuları, toplantı alanları, ibadet mekânları ve dar geçitler bu yaşamın izlerini taşır. Bazı tünel girişlerinde güvenlik için büyük taş silindirler kullanılmıştır. Derinkuyu'yu gezerken özellikle havalandırma sistemi, dar geçitler, ortak kullanım alanları ve güvenlik düzeneklerine dikkat et. Bu durak bize birlikte yaşamanın yardımlaşma, sorumluluk, dayanışma ve güven gerektirdiğini düşündürüyor.`;
 
 const VOICE_PREF_KEY='derinkuyu-voice-name';
@@ -338,7 +351,7 @@ function speakTurkish(text, successMessage='Türkçe rehber anlatımı başladı
   }
   return run();
 }
-function speakGuide(){ return speakTurkish(guideNarration,'Türkçe rehber anlatımı başladı.'); }
+function speakGuide(){ playLocalGuide('ses-yeraltisehri.mp3'); }
 
 function openVoiceSelector(){
   if(!('speechSynthesis' in window)){ say('Bu cihazda ses seçimi desteklenmiyor.'); return; }
@@ -378,7 +391,6 @@ function openVoiceSelector(){
   else { speechSynthesis.addEventListener('voiceschanged', draw, {once:true}); setTimeout(draw,1200); }
 }
 
-function stopGuide(){ if('speechSynthesis' in window) speechSynthesis.cancel(); say('Sesli anlatım durduruldu.'); }
 
 const verifiedImages = {
   undergroundRoom: {
@@ -536,7 +548,7 @@ const richStops = {
 };
 
 
-function speakText(text){ return speakTurkish(text,'Rehber anlatımı başladı.'); }
+function speakText(text,id){ const map={church:'ses-uzumlu-kilise.mp3',mosque:'ses-cumhuriyet-camii.mp3',park:'ses-hakki-atamulu-parki.mp3'}; if(map[id]) playLocalGuide(map[id]); }
 
 
 function renderUnderground(tab='discover'){
@@ -551,7 +563,7 @@ function renderUnderground(tab='discover'){
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>renderUnderground(b.dataset.tab));
   const body=document.querySelector('#tabBody');
   if(tab==='discover') body.innerHTML=`<div class="guide-wrap">
-    <div class="guide-actions"><button class="listen-btn" id="listenGuide">🔊 Rehberi Dinle</button><button class="stop-btn" id="stopGuide">■ Durdur</button><button class="stop-btn" id="voiceSelectBtn">🎙️ Ses Seç</button></div>
+    <div class="guide-actions"><button class="listen-btn" id="listenGuide">🔊 Rehberi Dinle</button><button class="stop-btn" id="stopGuide">■ Durdur</button></div>
     <section class="tour-card"><div class="tour-label">KISACA</div><h3>Yer altında kurulmuş çok katlı bir yaşam sistemi</h3><p>Derinkuyu Yeraltı Şehri, büyük bir topluluğun barınma, korunma ve günlük ihtiyaçlarını karşılayabilecek biçimde düzenlenmiş çok katlı bir yeraltı yerleşimidir. Kültür ve Turizm Bakanlığı tanıtımında yapının <strong>sekiz katlı</strong> olduğu belirtilir.</p></section>
     <div class="real-gallery">
       <figure>${resilientImage(verifiedImages.undergroundRoom.primary,verifiedImages.undergroundRoom.alternate,"Derinkuyu Yeraltı Şehri oda ve ortak kullanım alanı")}<figcaption>Yeraltı şehrindeki oda ve ortak kullanım alanlarından bir görünüm.</figcaption></figure>
@@ -579,7 +591,6 @@ function renderUnderground(tab='discover'){
   if(document.querySelector('#toMission')) document.querySelector('#toMission').onclick=()=>renderUnderground('mission');
   if(document.querySelector('#listenGuide')) document.querySelector('#listenGuide').onclick=speakGuide;
   if(document.querySelector('#stopGuide')) document.querySelector('#stopGuide').onclick=stopGuide;
-  if(document.querySelector('#voiceSelectBtn')) document.querySelector('#voiceSelectBtn').onclick=openVoiceSelector;
   document.querySelectorAll('[data-mission]').forEach(c=>c.onchange=()=>{if(!isLive()) return; state.mission[c.dataset.mission]=c.checked;save();});
   if(document.querySelector('#missionDone')) document.querySelector('#missionDone').onclick=()=>{const n=Object.values(state.mission).filter(Boolean).length;if(n<3){say('En az üç keşif işaretle.');return;}say('Keşif görevi tamamlandı!');renderUnderground('quiz');};
   if(document.querySelector('#quizDone')) document.querySelector('#quizDone').onclick=()=>{const q1=document.querySelector('input[name=q1]:checked');const q2=document.querySelector('input[name=q2]:checked');if(!q1||!q2){say('İki soruyu da cevapla.');return;}const score=(q1.value==='0'?1:0)+(q2.value==='1'?1:0);state.quiz.underground=score;complete('underground');save();say(`Mini test: ${score}/2 doğru • Durak tamamlandı`);setTimeout(renderRoute,650);};
@@ -608,7 +619,7 @@ function renderRichStop(id, tab='discover'){
 
   if(tab==='discover'){
     body.innerHTML=`<div class="guide-wrap">
-      <div class="guide-actions"><button class="listen-btn" id="richListen">🔊 Rehberi Dinle</button><button class="stop-btn" id="richStop">■ Durdur</button><button class="stop-btn" id="richVoiceSelect">🎙️ Ses Seç</button></div>
+      <div class="guide-actions"><button class="listen-btn" id="richListen">🔊 Rehberi Dinle</button><button class="stop-btn" id="richStop">■ Durdur</button></div>
       <section class="tour-card"><div class="tour-label">KISACA</div><h3>${d.summaryTitle}</h3><p>${d.summary}</p></section>
       <div class="rich-gallery">${d.images.map((im,i)=>`<figure class="${i===0?'wide':''}">${resilientImage(im.url,im.altUrl||im.url,`${d.title} gerçek fotoğrafı`)}<figcaption>${im.cap}<small>${im.credit}</small></figcaption></figure>`).join('')}</div>
       <section class="tour-card"><div class="tour-label">TARİHÇE</div><h3>Geçmişten bugüne</h3><p>${d.history}</p></section>
@@ -617,9 +628,8 @@ function renderRichStop(id, tab='discover'){
       <div class="source-note"><strong>${d.source}</strong><br>Derinkuyu Yeraltı Şehri ve Üzümlü Kilise görselleri uygulamaya yerel dosya olarak eklendi. Cumhuriyet Camii ve Hakkı Atamulu Kültür Parkı için gezi öncesinde geçici kaynak görselleri kullanılıyor; gezi sonrasında öğrencilerin çektiği fotoğraflarla değiştirilecek.</div>
       <button class="primary-btn" id="richMissionBtn">${isLive()?'Keşif Görevine Geç →':'Gezi Günü Görev Açılacak 🔒'}</button>
     </div>`;
-    document.querySelector('#richListen').onclick=()=>speakText(d.narration);
+    document.querySelector('#richListen').onclick=()=>speakText(d.narration,id);
     document.querySelector('#richStop').onclick=stopGuide;
-    document.querySelector('#richVoiceSelect').onclick=openVoiceSelector;
     document.querySelector('#richMissionBtn').onclick=()=>renderRichStop(id,'mission');
     return;
   }

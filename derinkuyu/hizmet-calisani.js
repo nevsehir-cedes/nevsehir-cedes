@@ -1,6 +1,6 @@
 // cache version 20261120-2
 // cache-version: derinkuyu-v6-voice-picker
-const CACHE = 'derinkuyu-v5-turkce-ses';
+const CACHE = 'derinkuyu-v7-local-audio';
 const ASSETS=[
   "./",
   "./index.html",
@@ -23,7 +23,11 @@ const ASSETS=[
   "./assets/route-concept.png",
   "./assets/underground-concept.png",
   "./assets/underground1.jpg",
-  "./assets/underground2.jpg"
+  "./assets/underground2.jpg",
+  "./ses-yeraltisehri.mp3",
+  "./ses-uzumlu-kilise.mp3",
+  "./ses-cumhuriyet-camii.mp3",
+  "./ses-hakki-atamulu-parki.mp3",
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
