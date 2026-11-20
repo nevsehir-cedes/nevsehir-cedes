@@ -1,11 +1,11 @@
-// cache version 20261120-2
-// cache-version: derinkuyu-v6-voice-picker
-const CACHE = 'derinkuyu-v7-local-audio';
+// cache version 20261120-wade-v2
+// cache-version: derinkuyu-wade-v2
+const CACHE = 'derinkuyu-v8-wade-audio-v2';
 const ASSETS=[
   "./",
   "./index.html",
   "./manifest.json",
-  "./uygulama.js",
+  "./app.js",
   "./config.js",
   "./style.css",
   "./assets/apple-touch-icon.png",
@@ -24,10 +24,10 @@ const ASSETS=[
   "./assets/underground-concept.png",
   "./assets/underground1.jpg",
   "./assets/underground2.jpg",
-  "./ses-yeraltisehri.mp3",
-  "./ses-uzumlu-kilise.mp3",
-  "./ses-cumhuriyet-camii.mp3",
-  "./ses-hakki-atamulu-parki.mp3",
+  "./ses-yeraltisehri-v2.mp3",
+  "./ses-uzumlu-kilise-v2.mp3",
+  "./ses-cumhuriyet-camii-v2.mp3",
+  "./ses-hakki-atamulu-parki-v2.mp3",
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(()=>self.skipWaiting()));

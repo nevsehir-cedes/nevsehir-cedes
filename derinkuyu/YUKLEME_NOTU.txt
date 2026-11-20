@@ -1,0 +1,18 @@
+DERİNKUYU – WADE SES GÜNCELLEMESİ (v2)
+
+Bu paket uygulama kodunu yeni Wade Türkçe ses dosyalarına yönlendirir.
+
+Gerekli MP3 dosya adları:
+1. ses-yeraltisehri-v2.mp3
+2. ses-uzumlu-kilise-v2.mp3
+3. ses-cumhuriyet-camii-v2.mp3
+4. ses-hakki-atamulu-parki-v2.mp3
+
+GitHub derinkuyu klasörüne app.js, service-worker.js ve index.html dosyalarını yükleyin.
+Aynı klasöre yukarıdaki dört MP3 dosyasını da yükleyin.
+
+Notlar:
+- service-worker önbelleği derinkuyu-v8-wade-audio-v2 olarak yükseltildi.
+- service-worker içindeki yanlış ./uygulama.js yolu ./app.js olarak düzeltildi.
+- Eski MP3 dosyalarını silmek zorunda değilsiniz; yeni kod -v2 dosyalarını kullanır.
+- Güncellemeden sonra PWA'da eski sürüm görünürse uygulamayı tamamen kapatıp yeniden açın; gerekirse site verisini temizleyin.

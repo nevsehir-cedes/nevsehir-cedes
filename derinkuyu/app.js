@@ -351,7 +351,7 @@ function speakTurkish(text, successMessage='Türkçe rehber anlatımı başladı
   }
   return run();
 }
-function speakGuide(){ playLocalGuide('ses-yeraltisehri.mp3'); }
+function speakGuide(){ playLocalGuide('ses-yeraltisehri-v2.mp3'); }
 
 function openVoiceSelector(){
   if(!('speechSynthesis' in window)){ say('Bu cihazda ses seçimi desteklenmiyor.'); return; }
@@ -548,7 +548,7 @@ const richStops = {
 };
 
 
-function speakText(text,id){ const map={church:'ses-uzumlu-kilise.mp3',mosque:'ses-cumhuriyet-camii.mp3',park:'ses-hakki-atamulu-parki.mp3'}; if(map[id]) playLocalGuide(map[id]); }
+function speakText(text,id){ const map={church:'ses-uzumlu-kilise-v2.mp3',mosque:'ses-cumhuriyet-camii-v2.mp3',park:'ses-hakki-atamulu-parki-v2.mp3'}; if(map[id]) playLocalGuide(map[id]); }
 
 
 function renderUnderground(tab='discover'){
