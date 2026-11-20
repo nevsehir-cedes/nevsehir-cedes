@@ -123,6 +123,7 @@ document.querySelector('#menuBtn')?.addEventListener('click',openDrawer);
 document.querySelector('#drawerClose')?.addEventListener('click',closeDrawer);
 document.querySelector('#menuOverlay')?.addEventListener('click',closeDrawer);
 document.querySelectorAll('[data-drawer-nav]').forEach(b=>b.addEventListener('click',()=>{ closeDrawer(); go(b.dataset.drawerNav); }));
+
 document.querySelector('[data-drawer-action="orientation"]')?.addEventListener('click',()=>{ closeDrawer(); renderOrientation(); });
 document.querySelector('[data-drawer-action="mode"]')?.addEventListener('click',()=>{
   closeDrawer();
@@ -289,17 +290,107 @@ function renderIntro(){
   if(document.querySelector('#introDone')) document.querySelector('#introDone').onclick=()=>{complete('intro');say('Başlangıç tamamlandı.');setTimeout(renderRoute,400);};
 }
 
+let activeGuideAudio=null;
+function playLocalGuide(file, message='Türkçe rehber anlatımı başladı.') {
+  try {
+    if(activeGuideAudio){ activeGuideAudio.pause(); activeGuideAudio.currentTime=0; }
+    activeGuideAudio=new Audio(file);
+    activeGuideAudio.preload='auto';
+    activeGuideAudio.play().then(()=>say(message)).catch(()=>say('Ses dosyası oynatılamadı. Sayfayı yenileyip tekrar deneyin.'));
+  } catch(e){ say('Ses dosyası oynatılamadı.'); }
+}
+function stopGuide(){
+  if(activeGuideAudio){ activeGuideAudio.pause(); activeGuideAudio.currentTime=0; }
+  say('Sesli anlatım durduruldu.');
+}
+
 const guideNarration = `Derinkuyu Yeraltı Şehri, Kapadokya'nın jeolojik yapısı içinde geliştirilmiş çok katlı bir yeraltı yerleşimidir. Kültür ve Turizm Bakanlığı tanıtımına göre yapı sekiz katlıdır ve büyük bir topluluğun uzun süre birlikte yaşayabilmesine imkân verecek alanlar içerir. Erzak depoları, havalandırma bacaları, su kuyuları, toplantı alanları, ibadet mekânları ve dar geçitler bu yaşamın izlerini taşır. Bazı tünel girişlerinde güvenlik için büyük taş silindirler kullanılmıştır. Derinkuyu'yu gezerken özellikle havalandırma sistemi, dar geçitler, ortak kullanım alanları ve güvenlik düzeneklerine dikkat et. Bu durak bize birlikte yaşamanın yardımlaşma, sorumluluk, dayanışma ve güven gerektirdiğini düşündürüyor.`;
 
-function speakGuide(){
-  if(!('speechSynthesis' in window)){ say('Bu cihazda sesli okuma desteklenmiyor.'); return; }
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(guideNarration);
-  u.lang='tr-TR'; u.rate=.92; u.pitch=1;
-  speechSynthesis.speak(u);
-  say('Rehber anlatımı başladı.');
+const VOICE_PREF_KEY='derinkuyu-voice-name';
+
+function availableVoices(){
+  return ('speechSynthesis' in window) ? speechSynthesis.getVoices() : [];
 }
-function stopGuide(){ if('speechSynthesis' in window) speechSynthesis.cancel(); say('Sesli anlatım durduruldu.'); }
+function selectedVoice(){
+  const voices=availableVoices();
+  const saved=localStorage.getItem(VOICE_PREF_KEY);
+  if(saved){
+    const exact=voices.find(v=>v.name===saved);
+    if(exact) return exact;
+  }
+  return voices.find(v=>(v.lang||'').toLowerCase()==='tr-tr')
+    || voices.find(v=>(v.lang||'').toLowerCase().startsWith('tr'))
+    || voices.find(v=>/turkish|türkçe|turkce/i.test(v.name||''))
+    || null;
+}
+function speakTurkish(text, successMessage='Türkçe rehber anlatımı başladı.'){
+  if(!('speechSynthesis' in window)){ say('Bu cihazda sesli okuma desteklenmiyor.'); return false; }
+  speechSynthesis.cancel();
+  const voice=selectedVoice();
+  const run=()=>{
+    const v=selectedVoice();
+    if(!v){
+      say('Türkçe ses otomatik bulunamadı. “Ses Seç” düğmesinden telefondaki sesi seçin.');
+      return false;
+    }
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='tr-TR';
+    u.voice=v;
+    u.rate=.92;
+    u.pitch=1;
+    speechSynthesis.speak(u);
+    say(successMessage);
+    return true;
+  };
+  if(voice) return run();
+  if(!availableVoices().length){
+    const once=()=>{ speechSynthesis.removeEventListener('voiceschanged', once); run(); };
+    speechSynthesis.addEventListener('voiceschanged', once);
+    setTimeout(run,1200);
+    return true;
+  }
+  return run();
+}
+function speakGuide(){ playLocalGuide('ses-yeraltisehri.mp3'); }
+
+function openVoiceSelector(){
+  if(!('speechSynthesis' in window)){ say('Bu cihazda ses seçimi desteklenmiyor.'); return; }
+  const draw=()=>{
+    const voices=availableVoices();
+    document.querySelector('#voicePickerOverlay')?.remove();
+    const overlay=document.createElement('div');
+    overlay.id='voicePickerOverlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.58);display:flex;align-items:flex-end;justify-content:center;padding:16px;';
+    const panel=document.createElement('div');
+    panel.style.cssText='width:min(100%,520px);background:#fff8ee;color:#3a2416;border-radius:22px 22px 14px 14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.35);font-family:system-ui,sans-serif;';
+    const current=localStorage.getItem(VOICE_PREF_KEY)||'';
+    const opts=voices.map((v,i)=>`<option value="${String(v.name).replace(/"/g,'&quot;')}" ${v.name===current?'selected':''}>${(v.lang||'--')} — ${v.name}${v.default?' (varsayılan)':''}</option>`).join('');
+    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><strong style="font-size:20px">Rehber Sesi Seç</strong><div style="font-size:13px;opacity:.72;margin-top:3px">Türkçe sesi seçip önce deneyin.</div></div><button id="voiceClose" style="border:0;background:transparent;font-size:28px">×</button></div>
+      <select id="voiceSelect" style="width:100%;margin:16px 0 10px;padding:12px;border-radius:12px;border:1px solid #c7a67b;background:white;font-size:15px">${opts||'<option>Sesler yükleniyor…</option>'}</select>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button id="voiceTest" style="flex:1;padding:12px;border:0;border-radius:12px;background:#6b3d20;color:white;font-weight:700">▶ Sesi Dene</button><button id="voiceSave" style="flex:1;padding:12px;border:0;border-radius:12px;background:#b51613;color:white;font-weight:700">✓ Bu Sesi Kullan</button></div>
+      <div style="font-size:12px;opacity:.72;margin-top:12px">Not: Samsung A51’de bazı ses adları İngilizce görünebilir. “Sesi Dene” ile Türkçe okuyan sesi seçmeniz yeterlidir.</div>`;
+    overlay.appendChild(panel); document.body.appendChild(overlay);
+    const close=()=>overlay.remove();
+    panel.querySelector('#voiceClose').onclick=close;
+    overlay.onclick=e=>{if(e.target===overlay) close();};
+    panel.querySelector('#voiceTest').onclick=()=>{
+      const name=panel.querySelector('#voiceSelect').value;
+      const v=availableVoices().find(x=>x.name===name);
+      if(!v){ say('Seçilen ses bulunamadı.'); return; }
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance('Merhaba. Derinkuyu Dijital Gezi Rehberine hoş geldiniz.');
+      u.lang='tr-TR'; u.voice=v; u.rate=.92; speechSynthesis.speak(u);
+    };
+    panel.querySelector('#voiceSave').onclick=()=>{
+      const name=panel.querySelector('#voiceSelect').value;
+      if(name) localStorage.setItem(VOICE_PREF_KEY,name);
+      close(); say('Rehber sesi kaydedildi.');
+    };
+  };
+  if(availableVoices().length) draw();
+  else { speechSynthesis.addEventListener('voiceschanged', draw, {once:true}); setTimeout(draw,1200); }
+}
+
 
 const verifiedImages = {
   undergroundRoom: {
@@ -457,14 +548,7 @@ const richStops = {
 };
 
 
-function speakText(text){
-  if(!('speechSynthesis' in window)){ say('Bu cihazda sesli okuma desteklenmiyor.'); return; }
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='tr-TR'; u.rate=.92; u.pitch=1;
-  speechSynthesis.speak(u);
-  say('Rehber anlatımı başladı.');
-}
+function speakText(text,id){ const map={church:'ses-uzumlu-kilise.mp3',mosque:'ses-cumhuriyet-camii.mp3',park:'ses-hakki-atamulu-parki.mp3'}; if(map[id]) playLocalGuide(map[id]); }
 
 
 function renderUnderground(tab='discover'){
@@ -544,7 +628,7 @@ function renderRichStop(id, tab='discover'){
       <div class="source-note"><strong>${d.source}</strong><br>Derinkuyu Yeraltı Şehri ve Üzümlü Kilise görselleri uygulamaya yerel dosya olarak eklendi. Cumhuriyet Camii ve Hakkı Atamulu Kültür Parkı için gezi öncesinde geçici kaynak görselleri kullanılıyor; gezi sonrasında öğrencilerin çektiği fotoğraflarla değiştirilecek.</div>
       <button class="primary-btn" id="richMissionBtn">${isLive()?'Keşif Görevine Geç →':'Gezi Günü Görev Açılacak 🔒'}</button>
     </div>`;
-    document.querySelector('#richListen').onclick=()=>speakText(d.narration);
+    document.querySelector('#richListen').onclick=()=>speakText(d.narration,id);
     document.querySelector('#richStop').onclick=stopGuide;
     document.querySelector('#richMissionBtn').onclick=()=>renderRichStop(id,'mission');
     return;
