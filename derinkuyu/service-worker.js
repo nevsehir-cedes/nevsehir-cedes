@@ -1,6 +1,6 @@
-// cache version 20261120-wade-v2
-// cache-version: derinkuyu-wade-v2
-const CACHE = 'derinkuyu-v8-wade-audio-v2';
+// cache version 20261120-field-final-v1
+// cache-version: derinkuyu-field-final-v1
+const CACHE = 'derinkuyu-v9-field-final-v1';
 const ASSETS=[
   "./",
   "./index.html",

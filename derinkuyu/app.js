@@ -9,6 +9,16 @@ const stops = [
 ];
 
 const LIVE_CODE = '4826';
+
+function turkeyDateISO(){
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone:'Europe/Istanbul', year:'numeric', month:'2-digit', day:'2-digit'
+  }).formatToParts(new Date()).reduce((acc,p)=>{ acc[p.type]=p.value; return acc; },{});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+function tripDate(){ return window.DERINKUYU_CONFIG?.tripDate || '2026-11-25'; }
+function isTripDayOrLater(){ return turkeyDateISO() >= tripDate(); }
+
 const state = JSON.parse(localStorage.getItem('derinkuyu-state') || '{}');
 state.completed ??= [];
 state.mission ??= {};
@@ -18,7 +28,10 @@ state.richMission ??= {};
 state.richQuiz ??= {};
 state.richNotes ??= {};
 state.mode ??= 'preview';
-if(window.DERINKUYU_CONFIG?.pilotFieldMode === true) state.mode = 'live';
+state.manualLiveOverride ??= false;
+if(window.DERINKUYU_CONFIG?.pilotFieldMode === true) state.manualLiveOverride = true;
+if(isTripDayOrLater() || state.manualLiveOverride) state.mode = 'live';
+else state.mode = 'preview';
 state.orientationSeen ??= false;
 state.valueCard ??= {
   school:'',
@@ -37,10 +50,13 @@ state.valueCard ??= {
 state.valueCardComplete ??= false;
 state.valueCardSubmitted ??= false;
 state.valueCardSubmittedAt ??= '';
+state.valueCardPending ??= false;
+state.valueCardLastError ??= '';
 state.participantCode ??= `DK-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
 
 const params = new URLSearchParams(location.search);
 if(params.get('gezi') === LIVE_CODE){
+  state.manualLiveOverride = true;
   state.mode = 'live';
   state.orientationSeen = false;
   localStorage.setItem('derinkuyu-state', JSON.stringify(state));
@@ -61,12 +77,13 @@ function progress(){ return Math.round((state.completed.length/stops.length)*100
 function modeBanner(){
   return isLive()
     ? `<div class="mode-banner live"><strong>🟢 Gezi Modu Açık</strong><span>Görevler ve ilerleme kaydediliyor.</span></div>`
-    : `<div class="mode-banner preview"><strong>👀 Gezi Öncesi İnceleme</strong><span>Bilgileri inceleyebilirsin; görevler ve ilerleme henüz kaydedilmez.</span></div>`;
+    : `<div class="mode-banner preview"><strong>👀 Gezi Öncesi İnceleme</strong><span>Bilgileri inceleyebilirsin; görevler 25 Kasım 2026 tarihinde otomatik açılır.</span></div>`;
 }
 function unlockTrip(){
   const code = prompt('Öğretmen gezi kodunu gir:');
   if(code === null) return;
   if(code.trim() === LIVE_CODE){
+    state.manualLiveOverride = true;
     state.mode = 'live';
     state.orientationSeen = false;
     save();
@@ -776,19 +793,31 @@ function valueCardPayload(){
     submitted_at: new Date().toISOString()
   };
 }
-async function submitValueCard(){
+async function submitValueCard({silent=false}={}){
   if(valueCardCount()<10){
-    say('Göndermeden önce Değer Kartındaki tüm bölümleri tamamla.');
-    return;
+    if(!silent) say('Göndermeden önce Değer Kartındaki tüm bölümleri tamamla.');
+    return false;
   }
   const cfg=window.DERINKUYU_CONFIG || {};
-  if(!cfg.supabaseUrl || !cfg.supabaseAnonKey){
+  const key=cfg.supabasePublishableKey || cfg.supabaseAnonKey || '';
+  if(!cfg.supabaseUrl || !key){
     state.valueCardComplete=true;
+    state.valueCardPending=true;
+    state.valueCardLastError='Merkezi gönderim yapılandırılmadı.';
     save();
-    say('Kart cihazda kaydedildi. Merkezi gönderim portal bağlantısından sonra açılacak.');
+    if(!silent) say('Kart cihazda kaydedildi. Merkezi gönderim bağlantısı henüz yapılandırılmadı.');
     const status=document.querySelector('#submitStatus');
-    if(status) status.innerHTML='<strong>✓ Cihazda kaydedildi.</strong><span>Merkezi cevap toplama bağlantısı henüz yapılandırılmadı.</span>';
-    return;
+    if(status) status.innerHTML='<strong>⚠ Cihazda kayıtlı, gönderim bekliyor.</strong><span>Merkezi cevap toplama bağlantısı henüz yapılandırılmadı.</span>';
+    return false;
+  }
+  if(!navigator.onLine){
+    state.valueCardPending=true;
+    state.valueCardLastError='İnternet bağlantısı yok.';
+    save();
+    if(!silent) say('İnternet yok. Cevapların cihazda korunuyor; bağlantı gelince otomatik yeniden denenecek.');
+    const status=document.querySelector('#submitStatus');
+    if(status) status.innerHTML='<strong>⚠ Gönderim bekliyor.</strong><span>İnternet bağlantısı gelince otomatik yeniden denenecek.</span>';
+    return false;
   }
   const btn=document.querySelector('#submitValueCard');
   if(btn){ btn.disabled=true; btn.textContent='Gönderiliyor…'; }
@@ -799,28 +828,42 @@ async function submitValueCard(){
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'apikey':cfg.supabaseAnonKey,
-        'Authorization':`Bearer ${cfg.supabaseAnonKey}`,
+        'apikey':key,
+        'Authorization':`Bearer ${key}`,
         'Prefer':'return=minimal'
       },
       body:JSON.stringify(valueCardPayload())
     });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    // 409 = aynı anonim katılımcı kodu daha önce başarıyla kaydedilmiş olabilir.
+    if(!res.ok && res.status!==409) throw new Error(`HTTP ${res.status}`);
     state.valueCardSubmitted=true;
     state.valueCardSubmittedAt=new Date().toISOString();
     state.valueCardComplete=true;
+    state.valueCardPending=false;
+    state.valueCardLastError='';
     save();
-    say('Değer Kartın başarıyla gönderildi.');
-    renderTasks();
+    if(!silent) say('Değer Kartın başarıyla gönderildi.');
+    if(document.body.getAttribute('data-view')==='tasks') renderTasks();
+    return true;
   }catch(err){
     console.error(err);
-    say('Gönderilemedi. Cevapların cihazda kayıtlı; internet gelince tekrar dene.');
+    state.valueCardPending=true;
+    state.valueCardLastError=String(err?.message || err);
+    save();
+    if(!silent) say('Gönderilemedi. Cevapların cihazda kayıtlı; internet gelince tekrar denenecek.');
     const status=document.querySelector('#submitStatus');
-    if(status) status.innerHTML='<strong>⚠ Gönderim bekliyor.</strong><span>Cevapların bu cihazda korunuyor; bağlantı geldiğinde tekrar deneyebilirsin.</span>';
+    if(status) status.innerHTML='<strong>⚠ Gönderim bekliyor.</strong><span>Cevapların bu cihazda korunuyor; bağlantı geldiğinde otomatik yeniden denenecek.</span>';
+    return false;
   }finally{
-    if(btn){ btn.disabled=false; btn.textContent='Değer Kartımı Gönder →'; }
+    if(btn && !state.valueCardSubmitted){ btn.disabled=false; btn.textContent='Değer Kartımı Gönder →'; }
   }
 }
+
+window.addEventListener('online',()=>{
+  if(state.valueCardPending && !state.valueCardSubmitted && valueCardCount()===10){
+    setTimeout(()=>submitValueCard({silent:true}),800);
+  }
+});
 
 function renderTasks(){
   document.body.setAttribute('data-view','tasks');
@@ -832,14 +875,14 @@ function renderTasks(){
       ${modeBanner()}
       <div class="valuecard-preview">
         <div class="valuecard-preview-icon">🧭</div>
-        <h3>Bu bölüm gezi günü aktif olacak</h3>
+        <h3>Bu bölüm 25 Kasım 2026 tarihinde aktif olacak</h3>
         <p>Gezi sırasında gözlemlerini kaydedecek, ziyaret ettiğimiz yerleri değerlerle ilişkilendirecek ve gezi sonunda kendi değerlendirmene ulaşacaksın.</p>
         <div class="preview-questions">
           <span>1–4 • Gezerken Gözlemle</span>
           <span>5–8 • Değerlerin İzinde Derinkuyu</span>
           <span>✓ • Tek Cümleyle Derinkuyu ve Öz Değerlendirme</span>
         </div>
-        <button class="secondary-btn" id="taskUnlock">🔐 Gezi Modunu Aç</button>
+        <button class="secondary-btn" id="taskUnlock">🔐 Öğretmen Test Kodu</button>
       </div>
     </section>`;
     document.querySelector('#taskUnlock').onclick=unlockTrip;
@@ -954,7 +997,9 @@ function renderTasks(){
       <div class="submit-status ${state.valueCardSubmitted?'sent':''}" id="submitStatus">
         ${state.valueCardSubmitted
           ? `<strong>✅ Değer Kartın gönderildi.</strong><span>${new Date(state.valueCardSubmittedAt).toLocaleString('tr-TR')}</span>`
-          : `<strong>${count===10?'✓ Kartın tamamlandı.':'Kartın henüz tamamlanmadı.'}</strong><span>${count===10?'Göndermeye hazırsın.':'Tüm ana bölümleri tamamladığında gönderebilirsin.'}</span>`}
+          : state.valueCardPending
+            ? `<strong>⚠ Gönderim bekliyor.</strong><span>Cevapların cihazda kayıtlı; internet/bağlantı uygun olduğunda yeniden gönderilecek.</span>`
+            : `<strong>${count===10?'✓ Kartın tamamlandı.':'Kartın henüz tamamlanmadı.'}</strong><span>${count===10?'Göndermeye hazırsın.':'Tüm ana bölümleri tamamladığında gönderebilirsin.'}</span>`}
       </div>
       <button class="primary-btn" id="submitValueCard" ${state.valueCardSubmitted?'disabled':''}>${state.valueCardSubmitted?'Gönderildi ✓':'Değer Kartımı Gönder →'}</button>
       <small class="privacy-note">Cevaplar yalnızca gezi değerlendirmesi için kullanılacaktır. Ad-soyad toplanmaz.</small>
